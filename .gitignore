@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Node
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+
+# Local data & secrets
+backend/data/
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+!.env.example
+*.pem
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+*.auto.tfvars
+terraform.tfvars
+!terraform.tfvars.example
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+backend.hcl
+
+# local notes (may contain account details)
+reference.txt
