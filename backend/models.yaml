@@ -1,0 +1,162 @@
+# Outsmart player roster.
+#
+# Each seat is a different frontier lab's open-weight model in the same "mid tier"
+# (~20-32B parameters). The backend picks the provider ID that matches INFERENCE_BACKEND
+# (bedrock | hf | ollama | fake); a seat may pin its own provider with `provider:`.
+#
+# Benchmark sources (checked 2026-10-18):
+#   AA index  = Artificial Analysis Intelligence Index v4.3.2 (artificialanalysis.ai)
+#   GPQA      = GPQA Diamond, from each lab's model card / tech report
+#   MMLU-Pro  = lab model cards (null = not published for this variant)
+#   Arena     = LMArena text score, style control (via llmrun.dev mirror, Oct 2026)
+# null means "no credible published number" - we never invent benchmark values.
+
+players:
+  - key: gpt-oss-20b
+    display_name: gpt-oss-20b
+    lab: OpenAI
+    color: "#10a37f"
+    emoji: "🧠"
+    params_total_b: 20.9
+    params_active_b: 3.6
+    architecture: Mixture-of-Experts
+    context_k: 128
+    license: Apache-2.0
+    released: 2025-08-05
+    reasoning: always            # always | hybrid | none
+    reasoning_note: "Chain-of-thought always on; we run reasoning_effort=low for parity."
+    ids:
+      bedrock: openai.gpt-oss-20b-1:0
+      hf: openai/gpt-oss-20b
+      ollama: gpt-oss:20b
+    extra:
+      bedrock: { reasoning_effort: low }
+      hf: { reasoning_effort: low }
+    benchmarks:
+      aa_index: 9
+      gpqa_diamond: 56.8        # low effort, no tools (OpenAI model card)
+      mmlu_pro: null
+      arena_text: 1317
+    pricing_per_m: { input: 0.07, output: 0.30 }
+
+  - key: gemma-3-27b
+    display_name: Gemma 3 27B
+    lab: Google DeepMind
+    color: "#4285f4"
+    emoji: "💎"
+    params_total_b: 27.4
+    params_active_b: 27.4
+    architecture: Dense
+    context_k: 128
+    license: Gemma Terms of Use
+    released: 2025-03-12
+    reasoning: none
+    reasoning_note: "No native reasoning; thinks only through the prompted private_thought field."
+    ids:
+      bedrock: google.gemma-3-27b-it
+      hf: google/gemma-3-27b-it
+      ollama: gemma3:27b
+    benchmarks:
+      aa_index: 5
+      gpqa_diamond: 42.4
+      mmlu_pro: 67.5
+      arena_text: 1366
+    pricing_per_m: { input: 0.23, output: 0.38 }
+
+  - key: magistral-small
+    display_name: Magistral Small 1.2
+    lab: Mistral AI
+    color: "#ff7000"
+    emoji: "🌪️"
+    params_total_b: 24.0
+    params_active_b: 24.0
+    architecture: Dense (fine-tune of Mistral Small 3.2)
+    context_k: 128
+    license: Apache-2.0
+    released: 2025-09-17
+    reasoning: always
+    reasoning_note: "Reasoning fine-tune of Mistral Small 3.2 (which is not served on Bedrock). The HF router hosts no Mistral chat models, so in dev this seat calls Mistral's own API."
+    fallback_backend: mistral
+    ids:
+      bedrock: mistral.magistral-small-2509
+      mistral: magistral-small-2509
+      ollama: magistral:24b
+    benchmarks:
+      aa_index: 9
+      gpqa_diamond: 70.1
+      mmlu_pro: null
+      arena_text: null
+    pricing_per_m: { input: 0.50, output: 1.50 }
+
+  - key: qwen3-32b
+    display_name: Qwen3 32B
+    lab: Alibaba Qwen
+    color: "#7c4dff"
+    emoji: "🐉"
+    params_total_b: 32.8
+    params_active_b: 32.8
+    architecture: Dense
+    context_k: 32
+    license: Apache-2.0
+    released: 2025-04-29
+    reasoning: hybrid
+    reasoning_note: "Hybrid thinking model; we use /no_think for parity and speed."
+    prompt_suffix: " /no_think"
+    ids:
+      bedrock: qwen.qwen3-32b-v1:0
+      hf: Qwen/Qwen3-32B
+      ollama: qwen3:32b
+    benchmarks:
+      aa_index: 7
+      gpqa_diamond: 54.6        # non-thinking mode (Qwen3 tech report)
+      mmlu_pro: null
+      arena_text: 1347
+    pricing_per_m: { input: 0.15, output: 0.60 }
+
+# Alternates you can swap into `roster` below.
+alternates:
+  - key: llama-4-scout
+    display_name: Llama 4 Scout
+    lab: Meta
+    color: "#0866ff"
+    emoji: "🦙"
+    params_total_b: 109
+    params_active_b: 17
+    architecture: Mixture-of-Experts
+    context_k: 10000
+    license: Llama 4 Community License
+    released: 2025-04-05
+    reasoning: none
+    reasoning_note: "Bedrock requires the us. cross-region inference profile."
+    ids:
+      bedrock: us.meta.llama4-scout-17b-instruct-v1:0
+      hf: meta-llama/Llama-4-Scout-17B-16E-Instruct
+      ollama: llama4:scout
+    benchmarks:
+      aa_index: 6
+      gpqa_diamond: 57.2
+      mmlu_pro: 74.3
+      arena_text: 1322
+    pricing_per_m: { input: 0.17, output: 0.66 }
+
+# Seat names stay fixed; which model sits where is shuffled every game (no position bias).
+seat_names: [Alex, Blake, Charlie, Drew]
+roster: [gpt-oss-20b, gemma-3-27b, magistral-small, qwen3-32b]
+
+# The analyst (commentator, emotion tagger, lie detector, final judge). Chosen from a lab with
+# no player at the table so it has no "home team". Confirm availability with
+#   aws bedrock list-foundation-models --by-provider deepseek --region us-west-2
+analyst:
+  display_name: DeepSeek-V3.1
+  lab: DeepSeek
+  why: "Strong open-weight model from a lab that is not playing, so the judge has no home team."
+  ids:
+    bedrock: deepseek.v3-v1:0          # Bedrock: us-west-2 / us-east-2 (not us-east-1)
+    openai_compat: gemini-2.5-flash    # dev: Google AI Studio free tier via its OpenAI-compatible API
+  pricing_per_m: { input: 0.58, output: 1.68 }
+
+# Identical generation settings for every player = equal footing.
+generation:
+  temperature: 0.7
+  max_tokens: 3000
+  timeout_s: 120   # per call; reasoning models can think for a while
