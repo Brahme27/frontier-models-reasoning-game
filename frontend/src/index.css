@@ -1,0 +1,126 @@
+@import 'tailwindcss';
+@import '@fontsource/bungee/400.css';
+@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/600.css';
+
+/* ---------------------------------------------------------------- design tokens */
+@theme {
+  --font-display: 'Bungee', 'Impact', sans-serif;
+  --font-sans: 'Bricolage Grotesque Variable', 'Trebuchet MS', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --color-ink: #07060d;          /* studio darkness */
+  --color-night: #100e1c;        /* panels */
+  --color-velvet: #1a1630;       /* raised panels */
+  --color-line: #2c2650;         /* hairlines */
+  --color-felt: #0d4a39;         /* the table */
+  --color-felt-deep: #062a20;
+  --color-chalk: #f3efe4;        /* primary text, warm white */
+  --color-dust: #a59fbf;         /* secondary text */
+  --color-gold: #ffc940;         /* coins, bonuses */
+  --color-lime: #c6ff3d;         /* alliance, good */
+  --color-pink: #ff2e88;         /* betrayal, bad */
+  --color-cyan: #3df5ff;         /* info, secrets */
+  --color-amber: #ff9f1c;        /* warning */
+
+  --animate-flicker: flicker 4s infinite;
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-float: float 3s ease-in-out infinite;
+}
+
+@keyframes flicker {
+  0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; }
+  20%, 24%, 55% { opacity: 0.55; }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ---------------------------------------------------------------- base */
+html {
+  color-scheme: dark;
+  background: var(--color-ink);
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: var(--font-sans);
+  color: var(--color-chalk);
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgb(255 46 136 / 0.14), transparent 60%),
+    radial-gradient(900px 500px at 100% 100%, rgb(61 245 255 / 0.08), transparent 60%),
+    var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* film grain over everything: gives the studio a broadcast texture */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-cyan);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: var(--color-pink);
+  color: var(--color-ink);
+}
+
+/* ---------------------------------------------------------------- utilities */
+@utility neon-text {
+  text-shadow:
+    0 0 6px currentColor,
+    0 0 22px color-mix(in srgb, currentColor 60%, transparent),
+    0 0 48px color-mix(in srgb, currentColor 35%, transparent);
+}
+
+@utility neon-box {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, currentColor 70%, transparent),
+    0 0 18px color-mix(in srgb, currentColor 35%, transparent),
+    inset 0 0 18px color-mix(in srgb, currentColor 12%, transparent);
+}
+
+@utility felt {
+  background:
+    radial-gradient(ellipse at 50% 40%, rgb(255 255 255 / 0.10), transparent 55%),
+    repeating-radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.015) 0 2px, transparent 2px 4px),
+    radial-gradient(ellipse at center, var(--color-felt) 0%, var(--color-felt-deep) 75%);
+}
+
+@utility panel {
+  background: linear-gradient(180deg, rgb(26 22 48 / 0.9), rgb(16 14 28 / 0.92));
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(8px);
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
