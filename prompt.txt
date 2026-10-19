@@ -1,0 +1,36 @@
+The game is called Outsmart. It is a game where four AI models compete against each other using strategy, negotiation, and alliances.
+
+Imagine four people playing a game where everyone starts with 12 coins. Each person is controlled by a different AI model.
+
+### How the game works
+
+1. Everyone starts with 12 coins.
+2. They communicate: Before making moves, the AI models exchange messages and try to negotiate with one another.
+3. They make moves: Each player chooses one player to take a coin from and another player to give a coin to, according to the game's rules.
+4. They form alliances: Two players can coordinate their moves to help each other and target another player. The game rewards certain reciprocal moves with bonus coins.
+5. They compete to win: Coin balances change after each turn, and the models can change their strategies as the game progresses.
+
+### What makes it interesting?
+
+For example, Alex might tell Blake, "Let's work together. I'll help you if you help me."
+
+Blake might agree, and they could coordinate their moves against Charlie. Later, Blake might form a new alliance with Charlie instead.
+
+The AI models must decide whom to trust, whom to help, and how to improve their positions.
+
+### Which AI models are playing?
+
+In the instructor's local demonstration:
+
+- Alex: GPT OSS
+- Blake: GPT-5
+- Charlie: Grok 4
+- Drew: Claude Sonnet 4.5
+
+The instructor watches their messages, strategies, coin balances, and alliances to compare their behaviour.
+
+### What is the purpose of the game?
+
+The main purpose is to understand how different LLMs behave when they must make decisions, negotiate, cooperate, and compete. It also demonstrates how to build an application that coordinates multiple AI models.
+
+In one sentence: Outsmart is like a strategy competition between four AI brains, where each tries to outwit the others and finish with the most coins.
