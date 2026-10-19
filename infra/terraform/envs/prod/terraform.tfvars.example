@@ -1,0 +1,8 @@
+# Copy to terraform.tfvars (git-ignored). No secrets are needed: Bedrock uses IAM.
+region             = "us-west-2"
+alert_email        = "you@example.com"
+monthly_budget_usd = 60
+max_games_per_day  = 20
+github_repo        = "your-github-user/outsmart" # enables the keyless GitHub Actions deploy role
+analyst_enabled    = true
+enable_waf         = true
