@@ -1,0 +1,116 @@
+name: Deploy
+
+# Ships main to AWS after CI passes, authenticating with GitHub OIDC (no long-lived keys).
+# Repository variables (Settings -> Variables) come from `terraform output`:
+#   AWS_REGION, AWS_DEPLOY_ROLE_ARN, ECR_REPOSITORY_URL, ECS_CLUSTER, ECS_SERVICE,
+#   ECS_TASK_FAMILY, SITE_BUCKET, CLOUDFRONT_DISTRIBUTION_ID
+# The "production" environment must be restricted to the main branch (Settings -> Environments);
+# the AWS role trusts only jobs bound to that environment.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    # Only successful CI runs triggered by a push to *this* repository's main branch
+    # (a fork PR from a branch named "main" also matches `branches: [main]`).
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' ||
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - id: sha
+        run: echo "sha=${{ github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_OUTPUT"
+
+  frontend:
+    # Built WITHOUT cloud credentials: npm install scripts never see the deploy role.
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci && npm run build
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: frontend/dist
+          retention-days: 1
+
+  deploy:
+    needs: [gate, frontend]
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push API image (the Dockerfile builds the SPA inside Docker, isolated)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ vars.ECR_REPOSITORY_URL }}:${{ needs.gate.outputs.sha }}
+
+      - name: Render new task definition revision
+        run: |
+          aws ecs describe-task-definition --task-definition "${{ vars.ECS_TASK_FAMILY }}" \
+            --query taskDefinition > task-def.json
+      - uses: aws-actions/amazon-ecs-render-task-definition@v1
+        id: taskdef
+        with:
+          task-definition: task-def.json
+          container-name: api
+          image: ${{ vars.ECR_REPOSITORY_URL }}:${{ needs.gate.outputs.sha }}
+
+      - name: Deploy to ECS (waits for a healthy rollout; circuit breaker rolls back failures)
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.taskdef.outputs.task-definition }}
+          cluster: ${{ vars.ECS_CLUSTER }}
+          service: ${{ vars.ECS_SERVICE }}
+          wait-for-service-stability: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: site
+
+      - name: Publish frontend
+        run: |
+          aws s3 sync site "s3://${{ vars.SITE_BUCKET }}" --delete \
+            --cache-control "public,max-age=31536000,immutable" --exclude index.html
+          aws s3 cp site/index.html "s3://${{ vars.SITE_BUCKET }}/index.html" --cache-control "no-cache"
+          aws cloudfront create-invalidation --distribution-id "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths "/index.html" "/"
