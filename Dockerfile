@@ -12,7 +12,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # ---------- 2. resolve Python deps with uv ----------
-FROM python:3.12-slim AS deps
+FROM python:3.15-slim AS deps
 COPY --from=ghcr.io/astral-sh/uv:0.13 /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never UV_PROJECT_ENVIRONMENT=/app/.venv
 WORKDIR /app
@@ -20,7 +20,7 @@ COPY backend/pyproject.toml backend/uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked --no-dev
 
 # ---------- 3. slim runtime ----------
-FROM python:3.12-slim AS runtime
+FROM python:3.15-slim AS runtime
 LABEL org.opencontainers.image.title="outsmart" \
       org.opencontainers.image.description="Four open-weight LLMs negotiate, ally and betray each other"
 RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --no-create-home app
